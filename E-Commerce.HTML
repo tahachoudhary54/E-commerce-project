@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Volt — The Best Tech, Curated for You</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.3/cdn.min.js" defer></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            teal:       { DEFAULT: '#1a7a6e', light: '#e8f4f2', dark: '#155f56' },
+            cream:      '#f5f4ef',
+            dark:       '#111f1d',
+            brand:      '#2d3832',
+            muted:      '#6b7c78',
+            accent:     '#4ecdc4',
+            danger:     '#e03a2f',
+            orange:     '#d4702a',
+            success:    '#2a8a60',
+          },
+          fontFamily: {
+            serif: ['"Playfair Display"', 'serif'],
+            sans:  ['"DM Sans"', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body { font-family: 'DM Sans', sans-serif; }
+    .font-serif { font-family: 'Playfair Display', serif; }
+    /* Cart slide-in */
+    #cartSidebar  { transition: transform 0.3s ease; transform: translateX(100%); }
+    #cartSidebar.open  { transform: translateX(0); }
+    /* Modal fade */
+    .modal-wrap { transition: opacity 0.25s ease; }
+    .modal-wrap.open { opacity: 1; pointer-events: all; }
+    /* Toast */
+    #toast { transition: opacity 0.3s ease, transform 0.3s ease; }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #f5f4ef; }
+    ::-webkit-scrollbar-thumb { background: #1a7a6e; border-radius: 3px; }
+    /* Strength bar */
+    #strengthFill { transition: width 0.3s ease, background-color 0.3s ease; }
+    /* Product card hover */
+    .product-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .product-card:hover { transform: translateY(-4px); box-shadow: 0 16px 48px rgba(0,0,0,0.12); }
+    .product-card:hover .card-thumb { transform: scale(1.06); }
+    .card-thumb { transition: transform 0.3s ease; }
+    /* Hero glow */
+    .hero-glow::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 50% 60%, rgba(26,122,110,0.09) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    /* Deal banner glow */
+    .deal-glow::after {
+      content: '';
+      position: absolute;
+      right: -80px; top: -80px;
+      width: 300px; height: 300px;
+      background: rgba(78,205,196,0.08);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    /* Tab active */
+    .filter-tab.active { background: #111f1d; border-color: #111f1d; color: #fff; }
+    /* Auth tab active */
+    .auth-tab.active { background: #fff; color: #111f1d; box-shadow: 0 2px 8px rgba(0,0,0,0.09); }
+    /* Input error */
+    .inp-error { border-color: #e03a2f !important; }
+    /* Field error */
+    .field-err { display: none; }
+    .field-err.show { display: block; }
+  </style>
+</head>
+<body class="bg-cream text-brand">
+
+<!-- ══════════════════ ANNOUNCEMENT BAR ══════════════════ -->
+<div class="bg-dark text-white text-center py-2.5 px-4 text-[13px] leading-relaxed">
+  ⚡ Limited time: <strong class="text-accent">20% off</strong> on all Sony headphones — Use code <strong class="text-accent">VOLT20</strong>
+</div>
+
+<!-- ══════════════════ NAVBAR ══════════════════ -->
+<nav class="bg-cream/90 backdrop-blur-md sticky top-0 z-50 border-b border-[#e0ddd4] flex items-center justify-between gap-4 px-6 md:px-12 lg:px-16 py-4">
+  <a href="#" class="font-serif text-2xl text-dark shrink-0">⚡ Volt</a>
+
+  <!-- Desktop links -->
+  <ul class="hidden md:flex gap-8 list-none">
+    <li><a href="#products" class="text-[15px] font-medium text-brand hover:text-teal transition-colors">Shop</a></li>
+    <li><a href="#features" class="text-[15px] font-medium text-brand hover:text-teal transition-colors">About</a></li>
+    <li><a href="#newsletter" class="text-[15px] font-medium text-brand hover:text-teal transition-colors">Contact</a></li>
+  </ul>
+
+  <!-- Actions -->
+  <div class="flex items-center gap-2.5 shrink-0">
+    <button id="signInBtn" class="hidden sm:block border-[1.5px] border-dark bg-transparent px-4 py-2 rounded-lg text-[14px] font-medium cursor-pointer hover:bg-dark hover:text-white transition-all">Sign In</button>
+    <button id="cartBtn" class="bg-dark text-white border-none px-4 py-2.5 rounded-lg text-[14px] font-medium cursor-pointer flex items-center gap-2 hover:bg-teal transition-colors">
+      🛒 Cart <span id="cartCount" class="bg-accent text-black rounded-full w-5 h-5 flex items-center justify-center text-[11px] font-bold shrink-0">0</span>
+    </button>
+    <!-- Hamburger -->
+    <button id="hamburgerBtn" class="flex md:hidden flex-col gap-[5px] bg-transparent border-none cursor-pointer p-1 ml-1" aria-label="Menu">
+      <span class="block w-[22px] h-0.5 bg-dark rounded-sm transition-all"></span>
+      <span class="block w-[22px] h-0.5 bg-dark rounded-sm transition-all"></span>
+      <span class="block w-[22px] h-0.5 bg-dark rounded-sm transition-all"></span>
+    </button>
+  </div>
+</nav>
+
+<!-- ══════════════════ MOBILE MENU ══════════════════ -->
+<div id="mobileMenu" class="hidden fixed inset-0 bg-cream z-[99] flex-col px-8 pt-20 pb-8 gap-6">
+  <button id="mobileClose" class="absolute top-5 right-5 bg-transparent border-none text-2xl cursor-pointer text-dark">✕</button>
+  <a href="#products" class="font-serif text-[22px] text-dark border-b border-[#e0ddd4] pb-4 hover:text-teal transition-colors" onclick="closeMobileMenu()">Shop</a>
+  <a href="#features"  class="font-serif text-[22px] text-dark border-b border-[#e0ddd4] pb-4 hover:text-teal transition-colors" onclick="closeMobileMenu()">About</a>
+  <a href="#newsletter" class="font-serif text-[22px] text-dark border-b border-[#e0ddd4] pb-4 hover:text-teal transition-colors" onclick="closeMobileMenu()">Contact</a>
+  <div class="flex flex-col gap-3 mt-2">
+    <button onclick="openAuthModal('signin'); closeMobileMenu();" class="bg-teal text-white border-none py-4 rounded-xl text-[15px] font-semibold cursor-pointer hover:bg-teal-dark transition-colors">Sign In</button>
+    <button onclick="openAuthModal('register'); closeMobileMenu();" class="bg-transparent text-dark border-[1.5px] border-[#ccc] py-4 rounded-xl text-[15px] font-semibold cursor-pointer hover:border-dark transition-colors">Create Free Account</button>
+  </div>
+</div>
+
+<!-- ══════════════════ HERO ══════════════════ -->
+<section class="relative hero-glow overflow-hidden text-center px-6 pt-20 pb-16 md:pt-24 md:pb-20 bg-cream">
+  <div class="inline-flex items-center gap-2 border-[1.5px] border-teal text-teal rounded-full px-5 py-1.5 text-[12px] font-semibold uppercase tracking-widest mb-7">
+    <span class="w-2 h-2 bg-teal rounded-full shrink-0"></span> New Arrivals 2026
+  </div>
+  <h1 class="font-serif text-[clamp(36px,6vw,72px)] leading-[1.1] text-dark">
+    The Best Tech,<em class="text-teal italic block">Curated for You</em>
+  </h1>
+  <p class="text-muted text-[17px] max-w-[500px] mx-auto mt-5 mb-10 leading-relaxed">
+    Premium electronics, hand-picked for quality. Official warranty on every product.
+  </p>
+  <div class="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
+    <button onclick="document.getElementById('products').scrollIntoView({behavior:'smooth'})" class="bg-teal text-white border-none py-4 px-8 rounded-xl text-[15px] font-semibold cursor-pointer hover:bg-teal-dark hover:-translate-y-0.5 transition-all">Explore Products</button>
+    <button onclick="openAuthModal('register')" class="bg-transparent text-dark border-[1.5px] border-[#ccc] py-4 px-8 rounded-xl text-[15px] font-semibold cursor-pointer hover:border-dark transition-colors">Create Free Account</button>
+  </div>
+</section>
+
+<!-- ══════════════════ STATS ══════════════════ -->
+<div class="px-6 md:px-12 lg:px-16 pb-14">
+  <div class="grid grid-cols-2 md:grid-cols-4 max-w-[800px] mx-auto bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.07)] overflow-hidden">
+    <div class="py-6 px-4 text-center border-r border-[#eeece6]">
+      <div class="font-serif text-[26px] font-bold text-dark">4+</div>
+      <div class="text-[12px] text-muted mt-1">Curated Products</div>
+    </div>
+    <div class="py-6 px-4 text-center border-r border-[#eeece6] md:border-r">
+      <div class="font-serif text-[26px] font-bold text-dark">10k+</div>
+      <div class="text-[12px] text-muted mt-1">Happy Customers</div>
+    </div>
+    <div class="py-6 px-4 text-center border-r border-[#eeece6] border-t md:border-t-0">
+      <div class="font-serif text-[26px] font-bold text-dark">4.8★</div>
+      <div class="text-[12px] text-muted mt-1">Average Rating</div>
+    </div>
+    <div class="py-6 px-4 text-center border-t md:border-t-0">
+      <div class="font-serif text-[26px] font-bold text-dark">₹0</div>
+      <div class="text-[12px] text-muted mt-1">Delivery above ₹5k</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ TRUST BAR ══════════════════ -->
+<div class="flex flex-wrap justify-center gap-4 md:gap-10 px-6 py-4 bg-white border-y border-[#eeece6]">
+  <div class="flex items-center gap-2 text-[13px] text-brand font-medium whitespace-nowrap">🚚 Free delivery above ₹5,000</div>
+  <div class="flex items-center gap-2 text-[13px] text-brand font-medium whitespace-nowrap">🔄 7-day hassle-free returns</div>
+  <div class="flex items-center gap-2 text-[13px] text-brand font-medium whitespace-nowrap">✅ 100% genuine products</div>
+  <div class="flex items-center gap-2 text-[13px] text-brand font-medium whitespace-nowrap">📞 24/7 customer support</div>
+</div>
+
+<!-- ══════════════════ DEAL BANNER ══════════════════ -->
+<div class="mx-6 md:mx-12 lg:mx-16 mt-14 bg-dark rounded-2xl px-8 md:px-12 py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 overflow-hidden relative deal-glow">
+  <div class="relative z-10">
+    <span class="inline-block bg-danger text-white rounded-full px-4 py-1 text-[12px] font-bold uppercase tracking-wide mb-4">🔥 Deal of the Day</span>
+    <div class="font-serif text-[clamp(22px,4vw,32px)] text-white mb-2">MacBook Air M3</div>
+    <div class="text-[14px] text-white/60 mb-5">Supercharged by M3. Up to 18 hours battery life.</div>
+    <div class="font-serif text-[26px] text-accent mb-1">₹1,14,900</div>
+    <div class="text-[13px] text-white/40">You save ₹15,000 · Official Apple Warranty</div>
+  </div>
+  <button onclick="openProduct(2)" class="relative z-10 shrink-0 bg-white text-dark border-none px-7 py-3.5 rounded-xl text-[14px] font-bold cursor-pointer hover:bg-teal-light transition-colors">Shop Now →</button>
+</div>
+
+<!-- ══════════════════ PRODUCTS ══════════════════ -->
+<section class="px-6 md:px-12 lg:px-16 py-16" id="products">
+  <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+    <div>
+      <div class="text-[12px] font-bold uppercase tracking-[0.12em] text-teal mb-2">Our Collection</div>
+      <div class="font-serif text-[clamp(26px,4vw,36px)] text-dark">Featured Products</div>
+    </div>
+    <div class="flex gap-2 flex-wrap" id="filterTabs">
+      <button class="filter-tab active border-[1.5px] border-[#ddd] bg-transparent px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer text-brand transition-all" data-cat="all">All</button>
+      <button class="filter-tab border-[1.5px] border-[#ddd] bg-transparent px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer text-brand transition-all" data-cat="audio">Audio</button>
+      <button class="filter-tab border-[1.5px] border-[#ddd] bg-transparent px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer text-brand transition-all" data-cat="laptops">Laptops</button>
+      <button class="filter-tab border-[1.5px] border-[#ddd] bg-transparent px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer text-brand transition-all" data-cat="phones">Phones</button>
+      <button class="filter-tab border-[1.5px] border-[#ddd] bg-transparent px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer text-brand transition-all" data-cat="drones">Drones</button>
+    </div>
+  </div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" id="productsGrid"></div>
+</section>
+
+<!-- ══════════════════ FEATURES ══════════════════ -->
+<section class="bg-white px-6 md:px-12 lg:px-16 py-16" id="features">
+  <div class="mb-8">
+    <div class="text-[12px] font-bold uppercase tracking-[0.12em] text-teal mb-2">Why Volt</div>
+    <div class="font-serif text-[clamp(26px,4vw,36px)] text-dark">Shop with Confidence</div>
+  </div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div class="bg-cream rounded-2xl p-7 text-center">
+      <div class="text-4xl mb-4">✅</div>
+      <div class="font-serif text-[18px] text-dark mb-2">100% Genuine</div>
+      <div class="text-[13px] text-muted leading-relaxed">Every product is sourced directly from authorized distributors.</div>
+    </div>
+    <div class="bg-cream rounded-2xl p-7 text-center">
+      <div class="text-4xl mb-4">🔒</div>
+      <div class="font-serif text-[18px] text-dark mb-2">Secure Payments</div>
+      <div class="text-[13px] text-muted leading-relaxed">Bank-grade encryption. Pay with UPI, cards, EMI or wallets.</div>
+    </div>
+    <div class="bg-cream rounded-2xl p-7 text-center">
+      <div class="text-4xl mb-4">⚡</div>
+      <div class="font-serif text-[18px] text-dark mb-2">Fast Dispatch</div>
+      <div class="text-[13px] text-muted leading-relaxed">Orders placed before 2PM ship the same day.</div>
+    </div>
+    <div class="bg-cream rounded-2xl p-7 text-center">
+      <div class="text-4xl mb-4">💬</div>
+      <div class="font-serif text-[18px] text-dark mb-2">24/7 Support</div>
+      <div class="text-[13px] text-muted leading-relaxed">Real humans, not bots. We're here whenever you need us.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ NEWSLETTER ══════════════════ -->
+<section class="bg-teal px-6 md:px-12 lg:px-16 py-20 text-center" id="newsletter">
+  <h2 class="font-serif text-[clamp(26px,4vw,36px)] text-white mb-3">Stay in the Loop</h2>
+  <p class="text-white/80 text-[16px] mb-8">Get exclusive deals and new arrivals straight to your inbox.</p>
+  <div class="flex flex-col sm:flex-row max-w-[480px] mx-auto gap-2.5">
+    <input type="email" id="emailInput" placeholder="Enter your email address"
+      class="flex-1 px-5 py-3.5 rounded-xl text-[15px] border-none outline-none min-w-0 font-sans" />
+    <button onclick="subscribe()" class="bg-dark text-white border-none px-6 py-3.5 rounded-xl text-[14px] font-semibold cursor-pointer whitespace-nowrap hover:bg-teal-dark transition-colors">Subscribe</button>
+  </div>
+</section>
+
+<!-- ══════════════════ FOOTER ══════════════════ -->
+<footer class="bg-dark text-white/50 px-6 md:px-12 lg:px-16 py-5 flex flex-col sm:flex-row justify-between items-center gap-2.5 text-[13px] flex-wrap text-center">
+  <span>© 2025 Volt Electronics. All rights reserved.</span>
+  <span>Made with ♥ in India</span>
+</footer>
+
+<!-- ══════════════════ TOAST ══════════════════ -->
+<div id="toast" class="fixed bottom-6 right-6 bg-dark text-white px-5 py-3.5 rounded-xl text-[14px] font-medium z-[999] opacity-0 translate-y-10 pointer-events-none max-w-[calc(100vw-48px)]"></div>
+
+<!-- ══════════════════ CART OVERLAY ══════════════════ -->
+<div id="cartOverlay" class="hidden fixed inset-0 bg-black/40 z-[200]"></div>
+
+<!-- ══════════════════ CART SIDEBAR ══════════════════ -->
+<div id="cartSidebar" class="fixed top-0 right-0 w-full max-w-[420px] h-full bg-white z-[201] flex flex-col shadow-[-8px_0_40px_rgba(0,0,0,0.12)]">
+  <div class="flex justify-between items-center px-5 pt-6 pb-5 border-b border-[#eee]">
+    <h2 class="font-serif text-[22px] text-dark">Your Cart</h2>
+    <button id="cartClose" class="bg-transparent border-none text-2xl cursor-pointer text-muted hover:text-dark transition-colors">✕</button>
+  </div>
+  <div id="cartItems" class="flex-1 overflow-y-auto px-5 py-4">
+    <div id="cartEmpty" class="text-center py-16 text-muted">🛒<br/><br/>Your cart is empty</div>
+  </div>
+  <div id="cartFooter" class="hidden px-5 py-6 border-t border-[#eee]">
+    <div class="flex justify-between text-[16px] font-bold text-dark mb-4">
+      <span>Total</span><span id="cartTotal">₹0</span>
+    </div>
+    <button onclick="showToast('✅ Proceeding to checkout…')" class="w-full bg-teal text-white border-none py-4 rounded-xl text-[15px] font-bold cursor-pointer hover:bg-teal-dark transition-colors">Checkout →</button>
+    <button id="continueShopBtn" class="w-full bg-transparent text-brand border-[1.5px] border-[#ddd] py-3 rounded-xl text-[14px] font-semibold cursor-pointer mt-2.5 hover:border-dark transition-colors">Continue Shopping</button>
+  </div>
+</div>
+
+<!-- ══════════════════ PRODUCT DETAIL MODAL ══════════════════ -->
+<div id="pdOverlay" class="modal-wrap fixed inset-0 bg-black/60 backdrop-blur-sm z-[300] flex items-center justify-center p-4 opacity-0 pointer-events-none">
+  <div class="bg-white rounded-3xl w-full max-w-[820px] max-h-[90vh] overflow-y-auto grid grid-cols-1 md:grid-cols-2 relative shadow-[0_32px_100px_rgba(0,0,0,0.2)]">
+    <button onclick="closeProduct()" class="absolute top-4 right-4 bg-black/10 border-none w-9 h-9 rounded-full text-[15px] cursor-pointer z-10 flex items-center justify-center text-dark hover:bg-black/20 transition-colors">✕</button>
+    <div id="pdImage" class="rounded-t-3xl md:rounded-l-3xl md:rounded-tr-none flex items-center justify-center min-h-[220px] md:min-h-[360px] overflow-hidden">
+      <img id="pdImg" src="" alt="" class="w-full h-full object-contain p-7" />
+    </div>
+    <div class="p-8 flex flex-col">
+      <span id="pdTag" class="inline-flex items-center bg-teal-light text-teal rounded-full px-4 py-1 text-[11px] font-bold uppercase tracking-wide w-fit mb-3"></span>
+      <div id="pdBrand" class="text-[12px] font-bold uppercase tracking-[0.1em] text-muted mb-1"></div>
+      <div id="pdName" class="font-serif text-[clamp(20px,3vw,26px)] text-dark leading-tight mb-2.5"></div>
+      <div class="text-amber-400 text-[14px] mb-3">★★★★★ <span class="text-muted text-[13px]">(4 reviews)</span></div>
+      <div id="pdDesc" class="text-[14px] text-muted leading-relaxed mb-4"></div>
+      <ul id="pdFeatures" class="flex flex-col gap-1.5 mb-4 list-none"></ul>
+      <div class="flex items-baseline gap-3 mb-1.5 flex-wrap">
+        <span id="pdPrice" class="font-serif text-[26px] font-bold text-dark"></span>
+        <span id="pdOriginal" class="text-[14px] text-muted line-through"></span>
+        <span id="pdSave" class="bg-green-100 text-success rounded-full px-3 py-0.5 text-[12px] font-bold"></span>
+      </div>
+      <div class="text-[12px] text-muted mb-4">🛡️ Official manufacturer warranty included</div>
+      <div class="flex items-center gap-3 mb-3">
+        <span class="text-[13px] font-semibold">Qty:</span>
+        <div class="flex items-center border-[1.5px] border-[#ddd] rounded-xl overflow-hidden">
+          <button onclick="pdQtyChange(-1)" class="bg-transparent border-none px-3 py-2 text-[18px] cursor-pointer text-dark hover:bg-cream transition-colors">−</button>
+          <span id="pdQtyNum" class="px-4 py-2 font-semibold text-[15px] border-x border-[#ddd] min-w-[44px] text-center">1</span>
+          <button onclick="pdQtyChange(1)" class="bg-transparent border-none px-3 py-2 text-[18px] cursor-pointer text-dark hover:bg-cream transition-colors">+</button>
+        </div>
+      </div>
+      <div class="flex gap-2.5">
+        <button id="pdAddBtn" class="flex-1 bg-teal text-white border-none py-3.5 rounded-xl text-[15px] font-bold cursor-pointer hover:bg-teal-dark transition-colors">Add to Cart</button>
+        <button class="bg-white text-muted border-[1.5px] border-[#ddd] px-4 py-3.5 rounded-xl text-[18px] cursor-pointer hover:border-danger hover:text-danger transition-all">♡</button>
+      </div>
+      <div class="flex gap-4 mt-4 pt-4 border-t border-[#eee] flex-wrap">
+        <span class="text-[12px] text-muted">🚚 Free delivery above ₹5,000</span>
+        <span class="text-[12px] text-muted">🔄 7-day returns</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ AUTH MODAL ══════════════════ -->
+<div id="authModal" class="modal-wrap fixed inset-0 bg-black/55 backdrop-blur-sm z-[500] flex items-center justify-center p-4 opacity-0 pointer-events-none">
+  <div class="bg-white rounded-3xl w-full max-w-[440px] p-9 relative shadow-[0_24px_80px_rgba(0,0,0,0.18)] max-h-[90vh] overflow-y-auto">
+    <button onclick="closeAuthModal()" class="absolute top-4 right-4 bg-transparent border-none text-2xl cursor-pointer text-muted hover:text-dark transition-colors">✕</button>
+    <div class="font-serif text-[20px] text-teal mb-1">⚡ Volt</div>
+
+    <!-- Tab switcher -->
+    <div class="flex bg-[#f0ede6] rounded-xl p-1 mb-6 gap-1">
+      <button id="tabSignIn" class="auth-tab active flex-1 bg-transparent border-none py-2.5 rounded-lg text-[14px] font-semibold cursor-pointer text-muted transition-all" onclick="switchAuthTab('signin')">Sign In</button>
+      <button id="tabRegister" class="auth-tab flex-1 bg-transparent border-none py-2.5 rounded-lg text-[14px] font-semibold cursor-pointer text-muted transition-all" onclick="switchAuthTab('register')">Register</button>
+    </div>
+
+    <!-- SIGN IN FORM -->
+    <div id="signinForm">
+      <div class="font-serif text-[24px] text-dark mb-1">Welcome back</div>
+      <div class="text-[14px] text-muted mb-6">Sign in to your Volt account</div>
+      <div class="mb-3.5">
+        <label class="block text-[13px] font-semibold text-brand mb-1.5">Email</label>
+        <input type="email" id="siEmail" placeholder="you@example.com" class="w-full px-3.5 py-3 border-[1.5px] border-[#ddd] rounded-xl text-[14px] font-sans outline-none bg-[#fafaf8] focus:border-teal focus:bg-white transition-colors" />
+        <div id="siEmailErr" class="field-err text-[12px] text-danger mt-1">Valid email required</div>
+      </div>
+      <div class="mb-2">
+        <label class="block text-[13px] font-semibold text-brand mb-1.5">Password</label>
+        <div class="relative">
+          <input type="password" id="siPass" placeholder="Your password" class="w-full px-3.5 py-3 pr-10 border-[1.5px] border-[#ddd] rounded-xl text-[14px] font-sans outline-none bg-[#fafaf8] focus:border-teal focus:bg-white transition-colors" />
+          <button type="button" onclick="togglePw('siPass',this)" class="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-[16px] text-muted">👁</button>
+        </div>
+        <div id="siPassErr" class="field-err text-[12px] text-danger mt-1">Password required</div>
+      </div>
+      <div class="text-right mb-4"><a onclick="showToast('📧 Reset link sent!')" class="text-[13px] text-teal cursor-pointer hover:underline">Forgot password?</a></div>
+      <button onclick="handleSignIn()" class="w-full bg-teal text-white border-none py-3.5 rounded-xl text-[15px] font-bold cursor-pointer hover:bg-teal-dark transition-colors">Sign In</button>
+      <div class="flex items-center gap-3 my-4 text-muted text-[13px]"><span class="flex-1 h-px bg-[#e5e2da]"></span>or<span class="flex-1 h-px bg-[#e5e2da]"></span></div>
+      <div class="flex gap-2.5">
+        <button onclick="socialLogin('Google')" class="flex-1 border-[1.5px] border-[#ddd] bg-white py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-2 hover:border-teal transition-colors">🌐 Google</button>
+        <button onclick="socialLogin('Apple')" class="flex-1 border-[1.5px] border-[#ddd] bg-white py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-2 hover:border-teal transition-colors"> Apple</button>
+      </div>
+      <div class="text-center mt-5 text-[13px] text-muted">No account? <a onclick="switchAuthTab('register')" class="text-teal font-semibold cursor-pointer hover:underline">Register free</a></div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="registerForm" class="hidden">
+      <div class="font-serif text-[24px] text-dark mb-1">Create account</div>
+      <div class="text-[14px] text-muted mb-6">Join Volt — it's free</div>
+      <div class="grid grid-cols-2 gap-3 mb-3.5">
+        <div>
+          <label class="block text-[13px] font-semibold text-brand mb-1.5">First name</label>
+          <input type="text" id="regFirst" placeholder="Rahul" class="w-full px-3.5 py-3 border-[1.5px] border-[#ddd] rounded-xl text-[14px] font-sans outline-none bg-[#fafaf8] focus:border-teal focus:bg-white transition-colors" />
+          <div id="regFirstErr" class="field-err text-[12px] text-danger mt-1">Required</div>
+        </div>
+        <div>
+          <label class="block text-[13px] font-semibold text-brand mb-1.5">Last name</label>
+          <input type="text" id="regLast" placeholder="Sharma" class="w-full px-3.5 py-3 border-[1.5px] border-[#ddd] rounded-xl text-[14px] font-sans outline-none bg-[#fafaf8] focus:border-teal focus:bg-white transition-colors" />
+          <div id="regLastErr" class="field-err text-[12px] text-danger mt-1">Required</div>
+        </div>
+      </div>
+      <div class="mb-3.5">
+        <label class="block text-[13px] font-semibold text-brand mb-1.5">Email</label>
+        <input type="email" id="regEmail" placeholder="you@example.com" class="w-full px-3.5 py-3 border-[1.5px] border-[#ddd] rounded-xl text-[14px] font-sans outline-none bg-[#fafaf8] focus:border-teal focus:bg-white transition-colors" />
+        <div id="regEmailErr" class="field-err text-[12px] text-danger mt-1">Valid email required</div>
+      </div>
+      <div class="mb-3.5">
+        <label class="block text-[13px] font-semibold text-brand mb-1.5">Phone</label>
+        <input type="tel" id="regPhone" placeholder="+91 98765 43210" class="w-full px-3.5 py-3 border-[1.5px] border-[#ddd] rounded-xl text-[14px] font-sans outline-none bg-[#fafaf8] focus:border-teal focus:bg-white transition-colors" />
+        <div id="regPhoneErr" class="field-err text-[12px] text-danger mt-1">Valid phone required</div>
+      </div>
+      <div class="mb-3.5">
+        <label class="block text-[13px] font-semibold text-brand mb-1.5">Password</label>
+        <div class="relative">
+          <input type="password" id="regPass" placeholder="Create password" oninput="checkStrength(this.value)" class="w-full px-3.5 py-3 pr-10 border-[1.5px] border-[#ddd] rounded-xl text-[14px] font-sans outline-none bg-[#fafaf8] focus:border-teal focus:bg-white transition-colors" />
+          <button type="button" onclick="togglePw('regPass',this)" class="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-[16px] text-muted">👁</button>
+        </div>
+        <div class="h-1 bg-[#e5e2da] rounded-full mt-2 overflow-hidden"><div id="strengthFill" class="h-full rounded-full w-0"></div></div>
+        <div id="strengthLabel" class="text-[11px] text-muted mt-1"></div>
+        <div id="regPassErr" class="field-err text-[12px] text-danger mt-1">Min 6 characters</div>
+      </div>
+      <div class="mb-4">
+        <label class="block text-[13px] font-semibold text-brand mb-1.5">Confirm Password</label>
+        <div class="relative">
+          <input type="password" id="regConfirm" placeholder="Repeat password" class="w-full px-3.5 py-3 pr-10 border-[1.5px] border-[#ddd] rounded-xl text-[14px] font-sans outline-none bg-[#fafaf8] focus:border-teal focus:bg-white transition-colors" />
+          <button type="button" onclick="togglePw('regConfirm',this)" class="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-[16px] text-muted">👁</button>
+        </div>
+        <div id="regConfirmErr" class="field-err text-[12px] text-danger mt-1">Passwords don't match</div>
+      </div>
+      <button onclick="handleRegister()" class="w-full bg-teal text-white border-none py-3.5 rounded-xl text-[15px] font-bold cursor-pointer hover:bg-teal-dark transition-colors">Create Account</button>
+      <div class="flex items-center gap-3 my-4 text-muted text-[13px]"><span class="flex-1 h-px bg-[#e5e2da]"></span>or<span class="flex-1 h-px bg-[#e5e2da]"></span></div>
+      <div class="flex gap-2.5">
+        <button onclick="socialLogin('Google')" class="flex-1 border-[1.5px] border-[#ddd] bg-white py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-2 hover:border-teal transition-colors">🌐 Google</button>
+        <button onclick="socialLogin('Apple')" class="flex-1 border-[1.5px] border-[#ddd] bg-white py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-2 hover:border-teal transition-colors"> Apple</button>
+      </div>
+      <div class="text-center mt-5 text-[13px] text-muted">Have an account? <a onclick="switchAuthTab('signin')" class="text-teal font-semibold cursor-pointer hover:underline">Sign in</a></div>
+    </div>
+
+    <!-- SUCCESS STATE -->
+    <div id="authSuccess" class="hidden text-center py-4">
+      <div class="text-[52px] mb-3">🎉</div>
+      <h3 id="successTitle" class="font-serif text-[22px] text-dark mb-2"></h3>
+      <p id="successMsg" class="text-muted text-[14px]"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ JAVASCRIPT ══════════════════ -->
+<script>
+// ─── PRODUCT DATA ─────────────────────────────────────────────
+const products = [
+  {
+    id: 1, category: 'audio', brand: 'Sony', name: 'WH-1000XM5',
+    desc: 'Industry-leading noise cancellation headphones with 30-hour battery life.',
+    price: 32999, original: 38999, save: 6000, discount: '-15%',
+    tagLeft: 'Best Seller', tagClass: 'bg-accent text-black',
+    bgStyle: 'background: linear-gradient(135deg,#1a1a1a 0%,#2d2d2d 100%)',
+    svg: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="w-36 h-36"><path d="M60 95 Q60 50 100 50 Q140 50 140 95" stroke="#888" stroke-width="7" fill="none" stroke-linecap="round"/><rect x="44" y="92" width="24" height="38" rx="9" fill="#444"/><rect x="132" y="92" width="24" height="38" rx="9" fill="#444"/><rect x="46" y="104" width="20" height="22" rx="7" fill="#4ecdc4" opacity="0.85"/><rect x="134" y="104" width="20" height="22" rx="7" fill="#4ecdc4" opacity="0.85"/><circle cx="56" cy="108" r="3" fill="#5ee" opacity="0.5"/></svg>`
+  },
+  {
+    id: 2, category: 'laptops', brand: 'Apple', name: 'MacBook Air M3',
+    desc: 'Supercharged by M3. Up to 18 hours battery. Fanless design.',
+    price: 114900, original: 129900, save: 15000, discount: '-12%',
+    tagLeft: 'Deal', tagClass: 'bg-orange text-white',
+    bgStyle: 'background: linear-gradient(135deg,#f0ede6 0%,#e8e2d6 100%)',
+    svg: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="w-40 h-40"><rect x="28" y="52" width="144" height="90" rx="9" fill="#c5c5c5"/><rect x="31" y="55" width="138" height="84" rx="7" fill="#111"/><rect x="18" y="142" width="164" height="9" rx="5" fill="#b0b0b0"/><rect x="72" y="145" width="56" height="3" rx="1.5" fill="#999"/><circle cx="100" cy="98" r="3.5" fill="#333"/><rect x="42" y="66" width="116" height="70" rx="4" fill="#1a1a1a"/><rect x="44" y="68" width="112" height="66" rx="3" fill="#0d1f1b" opacity="0.8"/></svg>`
+  },
+  {
+    id: 3, category: 'phones', brand: 'Samsung', name: 'Galaxy S24 Ultra',
+    desc: '200MP camera. Titanium frame. S Pen included for ultimate productivity.',
+    price: 89999, original: 99999, save: 10000, discount: '-10%',
+    tagLeft: 'New', tagClass: 'bg-teal text-white',
+    bgStyle: 'background: linear-gradient(135deg,#2d3832 0%,#3d4a44 100%)',
+    svg: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="w-32 h-40"><rect x="68" y="28" width="64" height="144" rx="14" fill="#1a1a1a"/><rect x="71" y="31" width="58" height="138" rx="12" fill="#0d0d0d"/><rect x="73" y="34" width="54" height="132" rx="10" fill="#1a2e28"/><circle cx="100" cy="47" r="5" fill="#222"/><circle cx="100" cy="47" r="2.5" fill="#111"/><rect x="84" y="158" width="32" height="4" rx="2" fill="#222"/><rect x="120" y="40" width="6" height="30" rx="3" fill="#222"/></svg>`
+  },
+  {
+    id: 4, category: 'drones', brand: 'DJI', name: 'Mini 4 Pro',
+    desc: 'Under 249g. 4K/60fps. Omnidirectional obstacle sensing.',
+    price: 74999, original: 84999, save: 10000, discount: '-12%',
+    tagLeft: 'Sale', tagClass: 'bg-danger text-white',
+    bgStyle: 'background: linear-gradient(135deg,#e8f4f2 0%,#d4ece8 100%)',
+    svg: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="w-40 h-36"><rect x="78" y="90" width="44" height="22" rx="6" fill="#555"/><rect x="80" y="92" width="40" height="18" rx="4" fill="#444"/><circle cx="100" cy="101" r="7" fill="#4ecdc4" opacity="0.9"/><circle cx="100" cy="101" r="3" fill="#fff" opacity="0.7"/><line x1="78" y1="90" x2="44" y2="70" stroke="#666" stroke-width="2.5" stroke-linecap="round"/><line x1="122" y1="90" x2="156" y2="70" stroke="#666" stroke-width="2.5" stroke-linecap="round"/><line x1="78" y1="112" x2="44" y2="132" stroke="#666" stroke-width="2.5" stroke-linecap="round"/><line x1="122" y1="112" x2="156" y2="132" stroke="#666" stroke-width="2.5" stroke-linecap="round"/><ellipse cx="44" cy="68" rx="22" ry="6" fill="#aaa" opacity="0.5"/><ellipse cx="156" cy="68" rx="22" ry="6" fill="#aaa" opacity="0.5"/><ellipse cx="44" cy="134" rx="22" ry="6" fill="#aaa" opacity="0.5"/><ellipse cx="156" cy="134" rx="22" ry="6" fill="#aaa" opacity="0.5"/></svg>`
+  }
+];
+
+const productFeatures = {
+  1: ['Industry-leading noise cancellation', '30-hour battery life', 'Multipoint connection (2 devices)', 'Speak-to-chat technology', 'Foldable, lightweight design'],
+  2: ['Apple M3 chip — blazing performance', 'Up to 18 hours battery life', '13.6-inch Liquid Retina display', 'MagSafe charging', 'Fanless, completely silent'],
+  3: ['200MP main camera with AI enhancements', 'Titanium frame — ultra durable', 'S Pen with 2.8ms latency', '5000mAh battery with 45W charging', 'IP68 water resistance'],
+  4: ['Under 249g — no registration needed', '4K/60fps video recording', 'Omnidirectional obstacle sensing', '34-min max flight time', 'ActiveTrack 360°']
+};
+
+const fmt = n => '₹' + n.toLocaleString('en-IN');
+
+// ─── CART STATE ────────────────────────────────────────────────
+let cart = [];
+
+// ─── PRODUCT GRID ──────────────────────────────────────────────
+function renderProducts(filter) {
+  const list = (!filter || filter === 'all') ? products : products.filter(p => p.category === filter);
+  document.getElementById('productsGrid').innerHTML = list.map(p => `
+    <div class="product-card bg-white rounded-2xl overflow-hidden cursor-pointer" onclick="openProduct(${p.id})">
+      <div class="relative h-[200px] sm:h-[220px] flex items-center justify-center overflow-hidden" style="${p.bgStyle}">
+        <div class="card-thumb flex items-center justify-center w-full h-full">
+          ${p.svg}
+        </div>
+        <span class="absolute top-3 left-3 ${p.tagClass} rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide">${p.tagLeft}</span>
+        <span class="absolute top-3 right-3 bg-black/70 text-white rounded-full px-3 py-1 text-[11px] font-bold">${p.discount}</span>
+      </div>
+      <div class="p-4">
+        <div class="text-[11px] font-bold uppercase tracking-[0.1em] text-muted mb-1">${p.brand}</div>
+        <div class="font-serif text-[17px] text-dark mb-1.5 leading-tight">${p.name}</div>
+        <div class="text-[12px] text-muted leading-snug mb-2">${p.desc}</div>
+        <div class="text-amber-400 text-[13px] mb-2.5">★★★★★ <span class="text-muted">(4)</span></div>
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <div>
+            <div class="font-serif text-[19px] font-bold text-dark">${fmt(p.price)}</div>
+            <div class="text-[12px] text-muted line-through">${fmt(p.original)}</div>
+            <div class="text-[11px] text-success font-semibold">Save ${fmt(p.save)}</div>
+          </div>
+          <button class="bg-dark text-white border-none px-3 py-2.5 rounded-lg text-[12px] font-semibold cursor-pointer whitespace-nowrap hover:bg-teal transition-colors"
+            onclick="event.stopPropagation(); addToCart(${p.id}, 1)">Add to Cart</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ─── FILTER TABS ───────────────────────────────────────────────
+document.getElementById('filterTabs').addEventListener('click', e => {
+  const btn = e.target.closest('.filter-tab');
+  if (!btn) return;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderProducts(btn.dataset.cat);
+});
+
+// ─── CART FUNCTIONS ────────────────────────────────────────────
+function addToCart(id, qty = 1) {
+  const product = products.find(p => p.id === id);
+  if (!product) return;
+  const existing = cart.find(c => c.product.id === id);
+  if (existing) existing.qty += qty;
+  else cart.push({ product, qty });
+  updateCartUI();
+  showToast('🛒 ' + product.name + ' added to cart!');
+}
+
+function removeFromCart(id) {
+  cart = cart.filter(c => c.product.id !== id);
+  updateCartUI();
+}
+
+function changeQty(id, delta) {
+  const item = cart.find(c => c.product.id === id);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) removeFromCart(id);
+  else updateCartUI();
+}
+
+function updateCartUI() {
+  const totalItems = cart.reduce((s, c) => s + c.qty, 0);
+  document.getElementById('cartCount').textContent = totalItems;
+
+  const itemsEl  = document.getElementById('cartItems');
+  const emptyEl  = document.getElementById('cartEmpty');
+  const footerEl = document.getElementById('cartFooter');
+
+  if (cart.length === 0) {
+    itemsEl.innerHTML = '<div id="cartEmpty" class="text-center py-16 text-muted">🛒<br/><br/>Your cart is empty</div>';
+    footerEl.classList.add('hidden');
+  } else {
+    footerEl.classList.remove('hidden');
+    itemsEl.innerHTML = cart.map(c => `
+      <div class="flex gap-3.5 py-4 border-b border-[#f0ede6]">
+        <div class="w-16 h-16 rounded-xl flex items-center justify-center shrink-0 overflow-hidden" style="${c.product.bgStyle}">
+          ${c.product.svg.replace('class="w-36 h-36"','class="w-12 h-12"').replace('class="w-40 h-40"','class="w-14 h-14"').replace('class="w-32 h-40"','class="w-10 h-14"').replace('class="w-40 h-36"','class="w-14 h-12"')}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-[13px] text-dark mb-1">${c.product.name}</div>
+          <div class="text-[13px] text-teal font-bold mb-2">${fmt(c.product.price)}</div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="changeQty(${c.product.id},-1)" class="bg-[#f0ede6] border-none w-6 h-6 rounded-md text-[14px] cursor-pointer flex items-center justify-center hover:bg-[#e0ddd4] transition-colors">−</button>
+            <span class="text-[14px] font-semibold min-w-[20px] text-center">${c.qty}</span>
+            <button onclick="changeQty(${c.product.id},1)" class="bg-[#f0ede6] border-none w-6 h-6 rounded-md text-[14px] cursor-pointer flex items-center justify-center hover:bg-[#e0ddd4] transition-colors">+</button>
+            <button onclick="removeFromCart(${c.product.id})" class="bg-transparent border-none text-danger text-[12px] cursor-pointer ml-1 hover:underline">✕ Remove</button>
+          </div>
+        </div>
+      </div>`).join('');
+    const total = cart.reduce((s, c) => s + c.product.price * c.qty, 0);
+    document.getElementById('cartTotal').textContent = fmt(total);
+  }
+}
+
+function openCart() {
+  document.getElementById('cartSidebar').classList.add('open');
+  document.getElementById('cartOverlay').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCart() {
+  document.getElementById('cartSidebar').classList.remove('open');
+  document.getElementById('cartOverlay').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+// Cart button wiring
+document.getElementById('cartBtn').addEventListener('click', openCart);
+document.getElementById('cartClose').addEventListener('click', closeCart);
+document.getElementById('cartOverlay').addEventListener('click', closeCart);
+document.getElementById('continueShopBtn').addEventListener('click', closeCart);
+
+// ─── PRODUCT DETAIL ────────────────────────────────────────────
+let pdQty = 1;
+
+function openProduct(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  pdQty = 1;
+  document.getElementById('pdQtyNum').textContent = 1;
+
+  // Image panel background
+  const imgPanel = document.getElementById('pdImage');
+  imgPanel.style.cssText = p.bgStyle;
+  document.getElementById('pdImg').outerHTML; // placeholder
+  imgPanel.innerHTML = p.svg.replace(/class="w-\d+ h-\d+"/g, 'style="width:160px;height:160px"');
+
+  document.getElementById('pdTag').textContent = p.tagLeft;
+  document.getElementById('pdBrand').textContent = p.brand;
+  document.getElementById('pdName').textContent = p.name;
+  document.getElementById('pdDesc').textContent = p.desc;
+  document.getElementById('pdPrice').textContent = fmt(p.price);
+  document.getElementById('pdOriginal').textContent = fmt(p.original);
+  document.getElementById('pdSave').textContent = 'Save ' + fmt(p.save);
+  document.getElementById('pdFeatures').innerHTML = (productFeatures[id] || []).map(f =>
+    `<li class="flex items-start gap-2 text-[13px] text-brand"><span class="text-teal font-bold shrink-0">✓</span>${f}</li>`
+  ).join('');
+  document.getElementById('pdAddBtn').onclick = () => { addToCart(id, pdQty); closeProduct(); };
+
+  document.getElementById('pdOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeProduct() {
+  document.getElementById('pdOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('pdOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('pdOverlay')) closeProduct();
+});
+
+function pdQtyChange(delta) {
+  pdQty = Math.max(1, pdQty + delta);
+  document.getElementById('pdQtyNum').textContent = pdQty;
+}
+
+// ─── AUTH MODAL ────────────────────────────────────────────────
+function openAuthModal(tab = 'signin') {
+  switchAuthTab(tab);
+  document.getElementById('authModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeAuthModal() {
+  document.getElementById('authModal').classList.remove('open');
+  document.body.style.overflow = '';
+  setTimeout(() => {
+    document.getElementById('signinForm').classList.remove('hidden');
+    document.getElementById('registerForm').classList.add('hidden');
+    document.getElementById('authSuccess').classList.add('hidden');
+    document.querySelectorAll('.field-err').forEach(e => e.classList.remove('show'));
+    document.querySelectorAll('#authModal input').forEach(i => i.classList.remove('inp-error'));
+  }, 300);
+}
+
+document.getElementById('authModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('authModal')) closeAuthModal();
+});
+
+// Wire sign-in button
+document.getElementById('signInBtn').addEventListener('click', () => openAuthModal('signin'));
+
+function switchAuthTab(tab) {
+  const isSignIn = tab === 'signin';
+  document.getElementById('signinForm').classList.toggle('hidden', !isSignIn);
+  document.getElementById('registerForm').classList.toggle('hidden', isSignIn);
+  document.getElementById('authSuccess').classList.add('hidden');
+  document.getElementById('tabSignIn').classList.toggle('active', isSignIn);
+  document.getElementById('tabRegister').classList.toggle('active', !isSignIn);
+}
+
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+
+function checkStrength(pw) {
+  const score = [pw.length >= 6, pw.length >= 10, /[A-Z]/.test(pw) && /[a-z]/.test(pw), /[0-9]/.test(pw), /[^a-zA-Z0-9]/.test(pw)].filter(Boolean).length;
+  const levels = [
+    { w: '20%', bg: '#e03a2f', t: 'Very weak' },
+    { w: '40%', bg: '#e07a2f', t: 'Weak' },
+    { w: '60%', bg: '#f0a500', t: 'Fair' },
+    { w: '80%', bg: '#2a8a60', t: 'Strong' },
+    { w: '100%', bg: '#1a7a6e', t: 'Very strong' }
+  ];
+  const lvl = pw ? levels[Math.max(0, score - 1)] : { w: '0%', bg: '', t: '' };
+  const fill = document.getElementById('strengthFill');
+  fill.style.width = lvl.w;
+  fill.style.backgroundColor = lvl.bg;
+  document.getElementById('strengthLabel').textContent = lvl.t;
+}
+
+function showFieldErr(inputId, errId) {
+  document.getElementById(inputId).classList.add('inp-error');
+  document.getElementById(errId).classList.add('show');
+}
+function clearFieldErr(inputId, errId) {
+  document.getElementById(inputId).classList.remove('inp-error');
+  document.getElementById(errId).classList.remove('show');
+}
+
+function handleSignIn() {
+  let ok = true;
+  const email = document.getElementById('siEmail').value.trim();
+  const pass  = document.getElementById('siPass').value;
+  if (!email || !/\S+@\S+\.\S+/.test(email)) { showFieldErr('siEmail', 'siEmailErr'); ok = false; } else clearFieldErr('siEmail', 'siEmailErr');
+  if (!pass)                                  { showFieldErr('siPass',  'siPassErr');  ok = false; } else clearFieldErr('siPass',  'siPassErr');
+  if (!ok) return;
+  showAuthSuccess('Welcome back! 👋', 'You have successfully signed in.');
+}
+
+function handleRegister() {
+  let ok = true;
+  const fields = [
+    ['regFirst',   'regFirstErr',   v => !!v],
+    ['regLast',    'regLastErr',    v => !!v],
+    ['regEmail',   'regEmailErr',   v => /\S+@\S+\.\S+/.test(v)],
+    ['regPhone',   'regPhoneErr',   v => v.replace(/\D/g, '').length >= 10],
+    ['regPass',    'regPassErr',    v => v.length >= 6],
+  ];
+  fields.forEach(([id, errId, test]) => {
+    const val = document.getElementById(id).value.trim();
+    if (!test(val)) { showFieldErr(id, errId); ok = false; } else clearFieldErr(id, errId);
+  });
+  const pass = document.getElementById('regPass').value;
+  const conf = document.getElementById('regConfirm').value;
+  if (pass !== conf) { showFieldErr('regConfirm', 'regConfirmErr'); ok = false; } else clearFieldErr('regConfirm', 'regConfirmErr');
+  if (!ok) return;
+  const first = document.getElementById('regFirst').value.trim();
+  showAuthSuccess('Account created! 🎉', 'Welcome to Volt, ' + first + '!');
+}
+
+function showAuthSuccess(title, msg) {
+  ['signinForm', 'registerForm'].forEach(id => document.getElementById(id).classList.add('hidden'));
+  document.getElementById('successTitle').textContent = title;
+  document.getElementById('successMsg').textContent   = msg;
+  document.getElementById('authSuccess').classList.remove('hidden');
+  setTimeout(() => { closeAuthModal(); showToast('✅ ' + title); }, 2000);
+}
+
+function socialLogin(provider) {
+  setTimeout(() => { closeAuthModal(); showToast('✅ Signed in with ' + provider + '!'); }, 700);
+}
+
+// ─── MOBILE MENU ───────────────────────────────────────────────
+function openMobileMenu() {
+  document.getElementById('mobileMenu').classList.remove('hidden');
+  document.getElementById('mobileMenu').classList.add('flex');
+  document.body.style.overflow = 'hidden';
+}
+function closeMobileMenu() {
+  document.getElementById('mobileMenu').classList.add('hidden');
+  document.getElementById('mobileMenu').classList.remove('flex');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('hamburgerBtn').addEventListener('click', openMobileMenu);
+document.getElementById('mobileClose').addEventListener('click', closeMobileMenu);
+
+// ─── NEWSLETTER ────────────────────────────────────────────────
+function subscribe() {
+  const email = document.getElementById('emailInput').value.trim();
+  if (!email || !/\S+@\S+\.\S+/.test(email)) { showToast('⚠️ Please enter a valid email'); return; }
+  document.getElementById('emailInput').value = '';
+  showToast('🎉 Subscribed! Check your inbox.');
+}
+
+// ─── TOAST ─────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
+  t.classList.add('opacity-100', 'translate-y-0');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    t.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
+    t.classList.remove('opacity-100', 'translate-y-0');
+  }, 2800);
+}
+
+// ─── KEYBOARD ESC ──────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  closeProduct();
+  closeAuthModal();
+  closeCart();
+  closeMobileMenu();
+});
+
+// ─── INIT ──────────────────────────────────────────────────────
+renderProducts('all');
+</script>
+</body>
+</html>
